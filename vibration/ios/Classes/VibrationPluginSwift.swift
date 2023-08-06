@@ -10,6 +10,9 @@ public class VibrationPluginSwift: NSObject, FlutterPlugin {
         private let isDevice = true
     #endif
     
+    // TODO: mine
+    var isPlaying: Bool = false
+
     @available(iOS 13.0, *)
     public static var engine: CHHapticEngine?
     
@@ -63,12 +66,35 @@ public class VibrationPluginSwift: NSObject, FlutterPlugin {
         
         return false;
     }
+
+
+    @available(iOS 13.0, *)
+    private func playHapticPattern(hapticEvents: [CHHapticEvent], engine: CHHapticEngine) -> Void{
+           do{
+                let pattern = try  CHHapticPattern(events: hapticEvents, parameters: [])
+                let player = try engine.makeAdvancedPlayer(with: pattern)
+                    
+                    player.completionHandler = { error in
+                        if let error = error {
+                            print("Error playing haptic pattern: \(error.localizedDescription)")
+                        } else {
+                            print("Haptic pattern finished playing.")
+                            if self.isPlaying{
+                                self.playHapticPattern(hapticEvents: hapticEvents, engine: engine)
+                            }
+                        }
+                    }
+
+                    try player.start(atTime: 0)
+                } catch {
+                    print("Faield to play")
+                }
+    }
     
     @available(iOS 13.0, *)
     private func playPattern(myArgs: [String: Any], pattern: [Int]) -> Void {
         // Get event parameters, if any
         var params: [CHHapticEventParameter] = []
-        //var amplitudes: [Int] = []
         let amplitudes = myArgs["intensities"] as! [Int] 
 
         // Create haptic events
@@ -82,7 +108,7 @@ public class VibrationPluginSwift: NSObject, FlutterPlugin {
                 if(amplitudes[i] != 0) {
                     let p = CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(Double(amplitudes[i]) / 255.0))
                     // Get wait time and duration
-                    let duration = Double(pattern[i]) / 1000.0
+                        let duration = Double(pattern[i]) / 1000.0
                     // Create haptic event
                     let e = CHHapticEvent(
                         eventType: .hapticContinuous,
@@ -101,13 +127,11 @@ public class VibrationPluginSwift: NSObject, FlutterPlugin {
             }
             i += 1    
         }
-        // Try to play engine
+
         do {
             if let engine = VibrationPluginSwift.engine {
-                let patternToPlay = try CHHapticPattern(events: hapticEvents, parameters: [])
-                let player = try engine.makePlayer(with: patternToPlay)
                 try engine.start()
-                try player.start(atTime: 0)
+                playHapticPattern(hapticEvents: hapticEvents, engine: engine)
             }
         } catch {
             print("Failed to play pattern: \(error.localizedDescription).")
@@ -151,11 +175,18 @@ public class VibrationPluginSwift: NSObject, FlutterPlugin {
             }
             
             if #available(iOS 13.0, *) {
+                isPlaying = true;
                 playPattern(myArgs: myArgs, pattern: pattern)
             }
             
             result(isDevice)
         case "cancel":
+            if #available(iOS 13.0, *) {
+                print("Lets cancel bro!")
+                VibrationPluginSwift.engine?.stop()
+                isPlaying = false;
+            }
+            
             result(nil)
         default:
             result(FlutterMethodNotImplemented)
