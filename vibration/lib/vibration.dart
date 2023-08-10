@@ -112,6 +112,8 @@ class Vibration {
     int repeat = -1,
     List<int> intensities = const [],
     int amplitude = -1,
+    List<int> hapticTapsPattern = const [],
+    List<int> hapticTapsIntensities = const [],
   }) =>
       _channel.invokeMethod(
         "vibrate",
@@ -120,7 +122,9 @@ class Vibration {
           "pattern": pattern,
           "repeat": repeat,
           "amplitude": amplitude,
-          "intensities": intensities
+          "intensities": intensities,
+          "hapticTapsPattern": hapticTapsPattern,
+          "hapticTapsIntensities": hapticTapsIntensities,
         },
       );
 

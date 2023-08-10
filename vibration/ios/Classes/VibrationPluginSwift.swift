@@ -96,6 +96,12 @@ public class VibrationPluginSwift: NSObject, FlutterPlugin {
         // Get event parameters, if any
         var params: [CHHapticEventParameter] = []
         let amplitudes = myArgs["intensities"] as! [Int] 
+     
+        let hapticTapsPattern = myArgs["hapticTapsPattern"] as! [Int]
+        print("Got haptic taps patterh: \(hapticTapsPattern.count)")
+        
+        let hapticTapsIntensities = myArgs["hapticTapsIntensities"] as! [Int]
+        print("hapticTapsIntensities: \(hapticTapsIntensities.count)")
 
         // Create haptic events
         var hapticEvents: [CHHapticEvent] = []
@@ -117,6 +123,7 @@ public class VibrationPluginSwift: NSObject, FlutterPlugin {
                         duration: duration
                     )
                     hapticEvents.append(e)
+
                     // Add duration to relative time
                     rel += duration
                 }
@@ -127,6 +134,22 @@ public class VibrationPluginSwift: NSObject, FlutterPlugin {
             }
             i += 1    
         }
+        print("before start")
+        var totalRelTime: Double = 0.0
+        var j: Int = 0
+        while j < hapticTapsPattern.count{
+            if(j < hapticTapsIntensities.count){
+                totalRelTime += Double(hapticTapsPattern[j]) / 1000.0
+                
+                 let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(Double(hapticTapsIntensities[j]) / 255.0))
+                 let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: Float(Double(hapticTapsIntensities[j]) / 255.0))
+                let transientEvent = CHHapticEvent(eventType: .hapticTransient, parameters: [intensity, sharpness], relativeTime: totalRelTime)
+                print("Adding haptic with rel time: \(totalRelTime)")
+                hapticEvents.append(transientEvent)
+            }
+            j += 1
+        }
+        
 
         do {
             if let engine = VibrationPluginSwift.engine {
